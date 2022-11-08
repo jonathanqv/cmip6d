@@ -17,5 +17,5 @@ setup(
     packages=find_packages(include=['cmip6d']),
     install_requires=requirements,
     license="MIT license",
-    license_files = ('LICENSE.txt'),
+    license_files = ('LICENSE'),
 )
