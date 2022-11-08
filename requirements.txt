@@ -1,0 +1,6 @@
+wget
+csv
+numpy
+pandas
+xarray
+beautifulsoup4
