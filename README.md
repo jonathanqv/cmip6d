@@ -1,4 +1,5 @@
 # cmip6d
+[![DOI](https://zenodo.org/badge/563466510.svg)](https://zenodo.org/badge/latestdoi/563466510)
 
 This python library downloads downscaled climate change scenarios from NASA NEX-GDDP-CMIP6 (https://ds.nccs.nasa.gov/thredds/catalog/AMES/NEX/GDDP-CMIP6/catalog.html).
 
