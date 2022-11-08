@@ -1,3 +1,11 @@
+import os, shutil, wget, csv, time, datetime
+import xarray as xr
+import numpy as np
+import pandas as pd
+import requests,pprint
+from bs4 import BeautifulSoup
+from multiprocessing import Pool
+
 class cmip6d():
     def __init__(self,out_path,coords,models=[],variables=['pr','tasmax','tasmin'],ssp=['ssp245','ssp585']):
         """
@@ -115,7 +123,7 @@ class cmip6d():
                                     else:
                                         pass
                                 pd.DataFrame(total_urls).to_csv(links_path,header=None,index=None,sep=' ')
-    def download_links(self,nworker=4,cont=False):
+    def download_links(self,nworker=4):
         for m in os.listdir(self.out_path):
             tok_break = False
             # Checking if is  in mdoels list
