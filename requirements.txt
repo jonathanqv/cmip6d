@@ -4,3 +4,4 @@ numpy
 pandas
 xarray
 beautifulsoup4
+cftime

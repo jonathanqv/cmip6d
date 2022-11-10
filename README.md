@@ -37,7 +37,7 @@ variables = ['pr','tasmax','tasmin'] # DEFAULT VARIABLE. Target variables from t
 ```
 To create the main Python object:
 ```python
-cc = cmip6d(out_path,coords,models=['ACCESS-CM2'],variables=variables,ssp=ssp)
+cc = cmip6d(out_path,coords,models,variables=variables,ssp=ssp)
 ```
 First, it creates the folder structure based on the MODELS, then it generates a "link.txt" file with the links to be downloaded. The "check_links" argument allows you to not re-create the "link.txt" file if it already exists.
 ```python
@@ -46,6 +46,10 @@ cc.get_links(out_path,check_links=True)
 To download the links you need to specify a number of workers "nworker", which speeds up the download. Once completed these step you will have all the netcdf files for your climate change model, these can be loaded with xarray or whatever other method you prefer.
 ```python
 cc.download_links(nworker=4)
+```
+If you want to merge the yearly individual ".nc" files into one for each variable use:
+```python
+cc.merge_files(cont)
 ```
 ## Additional steps
 If you would like to get 2 ".csv" files with coordinates of the following structure:
@@ -64,7 +68,7 @@ and
 | 2015-01-02 |  .... | ..... | ... |
 | ...        |  .... | ..... | ... |
 
-You can use the following function after running the previous ones, where "cont=True" does not process the data if the files already exist, and "nu" represent the models you would like not to process.
+You can use the following function after running "merge_files", where "cont=True" does not process the data if the files already exist. This function returns a dictionary of the climate change models and dates that were not processed because of missing dates in the timeserie from 2015-01-01 to 2100-12-31.
 ```python
-cc.get_csv(self,cont=True,nu=['CESM2','CESM2-WACCM','IITM-ESM','HadGEM3-GC31-MM'])
+todel = cc.get_csv(cont)
 ```

@@ -1,4 +1,4 @@
-import os, shutil, wget, csv, time, datetime
+import os, shutil, wget, csv, time, datetime,cftime
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -63,6 +63,7 @@ class cmip6d():
         #.______________________
         level1= self.url_lv(URL_BASE+self.URL_END,URL_BASE)
         for url_1,name_1 in level1:
+            token = False
             name_1_var = name_1.split('/')[0]
             if len(self.models) == 0:
                 pass
@@ -80,22 +81,28 @@ class cmip6d():
             
             if False in [i in total_level2 for i in self.ssp]:
                 print(F"Skipped {name_1} - ssp not found")
+                token = True
                 continue
             for url_2,name_2 in level2:
+                if token == True:
+                    break
                 name_2_var = name_2.split('/')[0]
                 if name_2_var in self.ssp:
         # r1i1p1f1 level
         #.______________________
                     level3=self.url_lv(url_2,URL_BASE+name_1+name_2)
                     for url_3,name_3 in level3:
+                        if token == True:
+                            break
         # Variable level
         #.______________________
                         level4=self.url_lv(url_3,URL_BASE+name_1+name_2+name_3)
                         # Checking if variables are present
                         total_level4 = [i.split('/')[0] for i in pd.DataFrame(level4)[1].values]
                         if False in [i in total_level4 for i in self.variables]:
-                            print(F"Skipped {name_1} - {name2} - variables not found")
-                            continue
+                            print(F"Skipped {name_1} - {name_2} - variables not found")
+                            token = True
+                            break
                         for url_4,name_4 in level4:
                             varvar=name_4.split('/')[0]
                             if varvar in self.variables:
@@ -169,10 +176,8 @@ class cmip6d():
                                 p.map(self.work_log, work[1:])
     def work_log(self,work_data): # Created separate function as it was producing an error
         wget.download(work_data,self.var_path)
-    def get_csv(self,cont=False,nu=['CESM2','CESM2-WACCM','IITM-ESM','HadGEM3-GC31-MM']):
-        date_range = pd.date_range('2015-01-01 12','2100-12-31 12')
+    def merge_files(self,cont=False):
         for m in os.listdir(self.out_path):
-            # Checking if is  in mdoels list
             if len(self.models) == 0:
                 pass
             else:
@@ -180,80 +185,107 @@ class cmip6d():
                     continue
                 else:
                     pass
-            # Filtering models without complete variables
-            if m in nu:
-                continue
             mod_path = os.path.join(self.out_path,m)
             for ssp in os.listdir(mod_path):
                 if ssp in self.ssp:
                     ssp_path = os.path.join(mod_path,ssp)
                     for var in os.listdir(ssp_path):
                         if var in self.variables:
-                            var_path = os.path.join(ssp_path,var)
-            # Creating paths
-            #.________________
-                            coord_df_path = os.path.join(ssp_path,F'coordinates{var}.csv')
-                            data_df_path = os.path.join(ssp_path,F'{var}.csv')
+                            outf = os.path.join(ssp_path,F"{var}.nc")
+                            # If file exists
                             if cont:
-                                if (os.path.isfile(coord_df_path)) & (os.path.isfile(data_df_path)):
-                                    print(F"\n Already exists {m} {ssp} {var}")
+                                if os.path.isfile(outf):
+                                    print(F"\nFile already exists {m} {ssp} {var}")
                                     continue
-            # Opening netcdf
-            #.________________
-                            print(F"\n Processing {m} {ssp} {var}")
-                            nc = [os.path.join(var_path,i) for i in os.listdir(var_path) if i!='links.txt']
-                            var_nc = xr.open_mfdataset(nc)
-            # Getting variables
-            #.________________
-                            lat = var_nc.lat.values.flatten()#[::-1]
-                            lon = var_nc.lon.values.flatten()
-                            lon = np.array([i-360 if i>180 else i for i in lon]).flatten()
-            # Processing times, there are some errors in the files
-            #.________________
-                            # if not isinstance(time,pd.DatetimeIndex):
-                            #     time = time.to_datetimeindex()
-                            time_arr = var_nc.indexes['time']
-                            time = []
-                            # Checking if it's datetime64
-                            if isinstance(time_arr.values[0],np.datetime64):
-                                time_arr = [pd.Timestamp(i) for i in time_arr.values]
-                            # Processing to skip incorrect dates like February 30
-                            for ti in time_arr:
-                                try:
-                                    dt = datetime.datetime(ti.year,ti.month,ti.day,ti.hour)
-                                    time.append(True)
-                                except:
-                                    print(F"\tError in date {ti.year}-{ti.month}-{ti.day}")
-                                    time.append(False)
-            # Filtering based on time series
-            #.________________
-                            var_nc= var_nc.sel(time=time)
-                            # Checking time series
-                            time = var_nc.indexes['time'].values
-                            for dr in date_range:
-                                if dr not in time:
-                                    print(F"Missing Date {dr.strftime('%m/%d/%Y')}")
-            # Creating csv files
-            #.________________
-                            if isinstance(var_nc['time'].values[0],np.datetime64):
-                                dataDict = {'Date':[datetime.datetime(t.year,t.month,t.day,t.hour) for t in pd.to_datetime(time)]}
-                            else:
-                                dataDict = {'Date':[datetime.datetime(t.year,t.month,t.day,t.hour) for t in time]}
-                            coordinates = {}
-                            for j in range(len(lat)):
-                                for i in range(len(lon)):
-                                    values = var_nc[var].values[:,j,i]
-                                    if np.isnan(values[0]): # If point in the ocean?
-                                        continue
-                                    else:
-                                        dataDict[F'P_{i}_{j}'] = values
-                                        coordinates[F'P_{i}_{j}'] = [lon[i],lat[j]] #lon,lat
-                            coord_df = pd.DataFrame(coordinates).T
-                            coord_df.columns = ['Longitude','Latitude']
-                            coord_df.index.name = 'Code'
-                            data_df = pd.DataFrame(dataDict)
-                            data_df = data_df.set_index('Date')
-            # Exporting
-            #.________________
-                            data_df.to_csv(data_df_path)
-                            coord_df.to_csv(coord_df_path)
+                            print(F"\nProcessing {m} {ssp} {var}")
+                            var_path = os.path.join(ssp_path,var)
+                            nc = [os.path.join(var_path,i) for i in os.listdir(var_path) if i.endswith('.nc')]
+                            var_nc = xr.open_mfdataset(nc)    
+                            var_nc.to_netcdf(outf)
+    def get_csv(self,cont=False):
+        # self.todel = []
+        self.todel = {}
+        date_range = pd.date_range('2015-01-01 12','2100-12-31 12')
+        # Model level
+        #.__________________________
+        for m in os.listdir(self.out_path):
+            token = False
+            if len(self.models) == 0:
+                pass
+            else:
+                if m not in self.models:
+                    continue
+                else:
+                    pass
+            # if m in nu:
+            #     continue
+            mod_path = os.path.join(self.out_path,m)
+        # ssp level
+        #.__________________________
+            for ssp in os.listdir(mod_path):
+                if token:
+                    break
+                if ssp in self.ssp:
+                    ssp_path = os.path.join(mod_path,ssp)
+                    nc = [os.path.join(ssp_path,i) for i in os.listdir(ssp_path) if i.endswith('.nc')]
+                    for variable in nc:
+                        if token:
+                            break
+                        var = variable.split('/')[-1].split('.nc')[0]
+        # Check if dataframe exist
+        #.__________________________
+                        coord_df_path = os.path.join(ssp_path,F'coordinates{var}.csv')
+                        data_df_path = os.path.join(ssp_path,F'{var}.csv')
+                        if cont:
+                            if (os.path.isfile(coord_df_path)) & (os.path.isfile(data_df_path)):
+                                print(F"\n Already exists {m} {ssp} {var}")
+                                continue
+        # Opening netcdf
+        #.________________                                
+                        var_ds = xr.open_dataset(variable)
+        # Checking times
+        #.________________
+                        time_arr = var_ds.indexes['time'].tolist()
+                        time_sel = []
+                        # Checking if it's datetime64
+                        if isinstance(time_arr[0],np.datetime64):
+                            time_arr = [pd.Timestamp(i) for i in time_arr.values]
+                        if isinstance(time_arr[0],cftime._cftime.DatetimeNoLeap):
+                            time_arr = var_ds.indexes['time'].to_datetimeindex().tolist()
+                        # Checking with date_range
+                        if len(set(date_range) - set(time_arr))>1:
+                            # self.todel.append(m)
+                            self.todel[m] = set(date_range) - set(time_arr)
+                            token = True
+                            break
+        # Getting variables
+        #.________________
+                        print(F"\n Processing {m} {ssp} {var}")
+                        lat = var_ds.lat.values.flatten()
+                        lon = var_ds.lon.values.flatten()
+                        lon = np.array([i-360 if i>180 else i for i in lon]).flatten() # Correcting
+        # Creating csv files
+        #.________________
+                        dataDict = {'Date':time_arr}
+                        coordinates = {}
+                        for j in range(len(lat)):
+                            for i in range(len(lon)):
+                                values = var_ds[var].values[:,j,i]
+                                if np.isnan(values[0]): # If point in the ocean?
+                                    continue
+                                else:
+                                    dataDict[F'P_{i}_{j}'] = values
+                                    coordinates[F'P_{i}_{j}'] = [lon[i],lat[j]] #lon,lat
+                        coord_df = pd.DataFrame(coordinates).T
+                        coord_df.columns = ['Longitude','Latitude']
+                        coord_df.index.name = 'Code'
+                        data_df = pd.DataFrame(dataDict)
+                        data_df = data_df.set_index('Date')
+        # Exporting
+        #.________________
+                        data_df.to_csv(data_df_path)
+                        coord_df.to_csv(coord_df_path)
+        #             break
+            #     break
+            # break
+        return self.todel                                              
