@@ -7,7 +7,7 @@ requirements = ["beautifulsoup4"]
 
 setup(
     name="cmip6d",
-    version="1.0",
+    version="1.1",
     author="Jonathan Quiroz",
     author_email="jonathanqv1@gmail.com",
     description="A package to download NASA NEX/GDDP-CMIP6 downscaled climate change scenarios",
