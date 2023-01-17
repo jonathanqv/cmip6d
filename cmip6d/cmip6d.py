@@ -202,10 +202,13 @@ class cmip6d():
                             nc = [os.path.join(var_path,i) for i in os.listdir(var_path) if i.endswith('.nc')]
                             var_nc = xr.open_mfdataset(nc)    
                             var_nc.to_netcdf(outf)
-    def get_csv(self,cont=False):
+    def get_csv(self,cont=False,historic=False):
         # self.todel = []
         self.todel = {}
-        date_range = pd.date_range('2015-01-01 12','2100-12-31 12')
+        if historic:
+            date_range = pd.date_range('1950-01-01 12','2014-12-31 12')
+        else:
+            date_range = pd.date_range('2015-01-01 12','2100-12-31 12')
         # Model level
         #.__________________________
         for m in os.listdir(self.out_path):
