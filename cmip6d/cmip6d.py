@@ -39,9 +39,9 @@ class cmip6d():
         urls_lv_list = []
         for row in href:
             if final:
-                if row.tt.text not in self.variables:
-                    url_end = URL_BASE+row.tt.text
-                    url_end=url_end.replace('catalog','ncss')
+                if row.text not in self.variables:
+                    url_end = '/'.join([URL_BASE,row.text])
+                    url_end=url_end.replace('catalog','ncss/grid')
                     year = url_end.split('_')[-1].split('.')[0]
                     extra = F"?var={self.varvar}&north={self.ymax}&west={self.xmin}&east={self.xmax}&south={self.ymin}&disableProjSubset=on&horizStride=1&time_start={year}-01-01T12%3A00%3A00Z&time_end={year}-12-31T12%3A00%3A00Z&timeStride=1&addLatLon=true"
                     urls_lv_list.append(url_end + extra)
@@ -49,7 +49,7 @@ class cmip6d():
                 if row['href'].startswith(self.URL_END):
                     pass
                 else:
-                    urls_lv_list.append([URL_BASE+row['href'],row.tt.text])
+                    urls_lv_list.append(['/'.join([URL_BASE,row['href']]),row.text])
         return urls_lv_list
     def get_links(self,out_path,check_links=False):
         """
@@ -57,12 +57,13 @@ class cmip6d():
         """
         # URLS
         #.______________________
-        URL_BASE = "https://ds.nccs.nasa.gov/thredds2/catalog/AMES/NEX/GDDP-CMIP6/"
+        URL_BASE = "https://ds.nccs.nasa.gov/thredds/catalog/AMES/NEX/GDDP-CMIP6/" # "https://ds.nccs.nasa.gov/thredds2/catalog/AMES/NEX/GDDP-CMIP6/"
         self.URL_END = "catalog.html"
         # Model level
         #.______________________
         level1= self.url_lv(URL_BASE+self.URL_END,URL_BASE)
         for url_1,name_1 in level1:
+            # print(url_1,name_1) #!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
             token = False
             name_1_var = name_1.split('/')[0]
             if len(self.models) == 0:
@@ -84,19 +85,24 @@ class cmip6d():
                 token = True
                 continue
             for url_2,name_2 in level2:
+                # print('\t',url_2,name_2) #!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
                 if token == True:
                     break
                 name_2_var = name_2.split('/')[0]
                 if name_2_var in self.ssp:
         # r1i1p1f1 level
         #.______________________
-                    level3=self.url_lv(url_2,URL_BASE+name_1+name_2)
+                    # print('\t\t','quesito')
+                    # print('\t\t',url_2,URL_BASE+name_1+name_2)
+                    # print('inputlevel3',url_2,'/'.join([URL_BASE,name_1,name_2]))
+                    level3=self.url_lv(url_2,'/'.join([URL_BASE,name_1,name_2]))
                     for url_3,name_3 in level3:
+                        # print('\t\t',url_3,name_3) #!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
                         if token == True:
                             break
         # Variable level
         #.______________________
-                        level4=self.url_lv(url_3,URL_BASE+name_1+name_2+name_3)
+                        level4=self.url_lv(url_3,'/'.join([URL_BASE,name_1,name_2,name_3]))  
                         # Checking if variables are present
                         total_level4 = [i.split('/')[0] for i in pd.DataFrame(level4)[1].values]
                         if False in [i in total_level4 for i in self.variables]:
@@ -104,12 +110,16 @@ class cmip6d():
                             token = True
                             break
                         for url_4,name_4 in level4:
+                            # print('\t\t\t','level 4')
+                            # print('\t\t\t',url_4,name_4) #!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
+
                             varvar=name_4.split('/')[0]
                             if varvar in self.variables:
                                 self.varvar = varvar
         # Final level, getting links
         #.______________________
-                                level5=self.url_lv(url_4,URL_BASE+name_1+name_2+name_3+name_4,final=True)
+                                level5=self.url_lv(url_4,'/'.join([URL_BASE,name_1,name_2,name_3,name_4]),final=True)
+                                # print(level5) #!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!#!
                                 # Export paths
                                 main_path = os.path.join(self.out_path,name_1,name_2,name_4)
                                 # Checking if path exists

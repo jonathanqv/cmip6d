@@ -1,5 +1,4 @@
 wget
-csv
 numpy
 pandas
 xarray
