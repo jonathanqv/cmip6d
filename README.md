@@ -18,11 +18,13 @@ If you don't want to get the .csv summary you do not need xarray, but it is high
 
 ## Install
 
-pip install git+https://github.com/jonathanqv/cmip6d.git@main
+Recommended Way:
 
+`pip install git+https://github.com/jonathanqv/cmip6d.git@main`
+
+Not updated:
 `pip install cmip6d`
 
-Recommended: install this repository
 
 ## Examples
 
