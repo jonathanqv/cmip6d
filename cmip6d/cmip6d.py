@@ -43,8 +43,9 @@ class cmip6d():
                     url_end = '/'.join([URL_BASE,row.text])
                     url_end=url_end.replace('catalog','ncss/grid')
                     year = url_end.split('_')[-1].split('.')[0]
-                    extra = F"?var={self.varvar}&north={self.ymax}&west={self.xmin}&east={self.xmax}&south={self.ymin}&disableProjSubset=on&horizStride=1&time_start={year}-01-01T12%3A00%3A00Z&time_end={year}-12-31T12%3A00%3A00Z&timeStride=1&addLatLon=true"
-                    urls_lv_list.append(url_end + extra)
+                    extra = F"?var={self.varvar}&north={self.ymax}&west={self.xmin}&east={self.xmax}&south={self.ymin}&disableProjSubset=on&horizStride=1"
+                    extra_time = F"&time_start={year}-01-01T12%3A00%3A00Z&time_end={year}-12-31T12%3A00%3A00Z&timeStride=1&addLatLon=true"
+                    urls_lv_list.append(url_end + extra + extra_time)
             else:
                 if row['href'].startswith(self.URL_END):
                     pass
@@ -176,7 +177,15 @@ class cmip6d():
                                 # Downloading in parallel
                                 work = links.values.flatten().tolist()
                                 try:
-                                    self.work_log(work[0])
+                                    joker = work[0]
+                                    try: # To check if reformatting to 12-30 is needed
+                                        self.work_log(joker)
+                                    except:
+                                        joker = joker.replace("-12-31T12%", "-12-30T12%") 
+                                        wget.download(joker,self.var_path)
+                                        # if successfull
+                                        work = [i.replace("-12-31T12%", "-12-30T12%")  for i in work]
+                                        pd.DataFrame(work).to_csv(link_path,header=None,index=None,sep=' ')
                                 except:
                                     tok_break = True
                                     shutil.rmtree(mod_path)

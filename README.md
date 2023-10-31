@@ -35,7 +35,7 @@ from cmip6d import cmip6d
 ```
 Define the main variables. Until 
 ```python
-out_path = 'test' # Defines your output folder
+out_path = 'test' # Defines your output folder, choose a new empty folder
 coords = [-75,-69.5,-17.5,-14] # xmin,xmax,ymin,ymax
 models = [] # If empty, downloads everything, if not, downloads specified packages
 ssp=['ssp245','ssp585'] # DEFAULT VARIABLE. Target scenarios from the NASA server
