@@ -131,7 +131,8 @@ class cmip6d():
                                 # Saving Urls
                                 total_urls = []
                                 for ffff in level5:
-                                    total_urls.append(ffff)
+                                    if '_v1.1' not in ffff: # Dirty fix
+                                        total_urls.append(ffff)
                                 # Check links?
                                 links_path = os.path.join(main_path,'links.txt')
                                 if check_links: # May need to check size of csv too, but looks not necessary
