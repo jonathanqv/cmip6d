@@ -22,7 +22,7 @@ Recommended Way:
 
 `pip install git+https://github.com/jonathanqv/cmip6d.git@main`
 
-Not updated:
+Deprecated:
 `pip install cmip6d`
 
 
@@ -57,6 +57,11 @@ If you want to merge the yearly individual ".nc" files into one for each variabl
 ```python
 cc.merge_files(cont)
 ```
+
+Note:
+There are some climate change models that do not contain all variables. For instance, if you want to download "CESM2" "ssp245" and you specify the variables ["pr","tasmax","tasmin"], It'll crash because there are no datasets "tasmax" and "tasmin" in this scenario, but it has "pr", so you would need to specify variables equal to only ["pr"]
+
+
 ## Additional steps
 If you would like to get 2 ".csv" files with coordinates of the following structure:
 
